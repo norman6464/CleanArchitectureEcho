@@ -15,8 +15,7 @@ type userRepository struct {
 	db *gorm.DB
 }
 
-// Spring bootの時はアノテーションやコンストラクタインジェクションで意識をしていなかったのだがインターフェースを返却をするが実際には実装をしたrepositoryが帰っている
-// これが依存性逆転の原則になる実際にこのコンストラクタを使用することでUsecaseが依存するのがこのインターフェースのリポジトリになる
+// これはrepositoryがDB側に依存をしているのでDI（依存性の注入）を行なっている
 func NewUserRepository(db *gorm.DB) IUserRepository {
 	return &userRepository{db}
 }
