@@ -5,6 +5,7 @@ import (
 	"go-rest-api/model"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ITaskRepository interface {
@@ -48,6 +49,18 @@ func (tr *taskRepository) CreateTask(task *model.Task) error {
 }
 
 func (tr *taskRepository) UpdateTask(task *model.Task, userId uint, taskId uint) error {
+	// Clausesメソッドはgormにupdate実行後DBからの更新後の行をselectして構造体に書き直す用の指示する句
+	// Clausesを実行しなかった場合、構造体taskに変更後の反映がされない
+	result := tr.db.Model(task).Clauses(clause.Returning{}).Where("id=? AND user_id=?", taskId, userId).Update("title", task.Title)
+	if result.Error != nil {
+		return result.Error
+	}
+	// Update文は戻り値はRowAffectedで何行updateされたのかをRowsAffectedで確認ができる
+	if result.RowsAffected < 1 {
+		return fmt.Errorf("object does not exsit")
+	}
+
+	return nil
 
 }
 
