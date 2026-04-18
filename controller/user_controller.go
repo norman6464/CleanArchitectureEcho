@@ -68,7 +68,12 @@ func (uc *userController) LogIn(c echo.Context) error {
 	cookie.Domain = os.Getenv("API_DOMAIN")
 
 	cookie.HttpOnly = true
-	cookie.SameSite = http.SameSiteNoneMode // フロントエンド、バックエンドともに違うドメインなのでSameSiteNoneModeにする
+	if os.Getenv("GO_ENV") == "dev" {
+		cookie.SameSite = http.SameSiteDefaultMode
+	} else {
+		cookie.Secure = true
+		cookie.SameSite = http.SameSiteNoneMode
+	}
 	c.SetCookie(cookie)
 	return c.NoContent(http.StatusOK) // 何もボディに返却がない場合はNocontentメソッドを使用する
 }
@@ -84,7 +89,12 @@ func (us *userController) LogOut(c echo.Context) error {
 	cookie.Domain = os.Getenv("API_DOMAIN")
 
 	cookie.HttpOnly = true
-	cookie.SameSite = http.SameSiteNoneMode // フロントエンド、バックエンドともに違うドメインなのでSameSiteNoneModeにする
+	if os.Getenv("GO_ENV") == "dev" {
+		cookie.SameSite = http.SameSiteDefaultMode
+	} else {
+		cookie.Secure = true
+		cookie.SameSite = http.SameSiteNoneMode
+	}
 	c.SetCookie(cookie)
 	return c.NoContent(http.StatusOK) // 何もボディに返却がない場合はNocontentメソッドを使用する
 }
