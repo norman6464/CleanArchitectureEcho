@@ -15,6 +15,7 @@ type IUserController interface {
 	Signup(c echo.Context) error
 	LogIn(c echo.Context) error
 	LogOut(c echo.Context) error
+	CsrfToken(c echo.Context) error
 }
 
 // Controller（interface層）からusecaseInterfaceに依存をしていく
@@ -86,4 +87,11 @@ func (us *userController) LogOut(c echo.Context) error {
 	cookie.SameSite = http.SameSiteNoneMode // フロントエンド、バックエンドともに違うドメインなのでSameSiteNoneModeにする
 	c.SetCookie(cookie)
 	return c.NoContent(http.StatusOK) // 何もボディに返却がない場合はNocontentメソッドを使用する
+}
+
+func (uc *userController) CsrfToken(c echo.Context) error {
+	token := c.Get("csrf").(string)
+	return c.JSON(http.StatusOK, echo.Map{
+		"csrf_token": token,
+	})
 }
