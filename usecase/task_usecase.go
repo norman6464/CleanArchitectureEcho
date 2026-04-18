@@ -3,6 +3,7 @@ package usecase
 import (
 	"go-rest-api/model"
 	"go-rest-api/repository"
+	"go-rest-api/validator"
 )
 
 // 基本的ユースケース層は今までrepositoryに依存していたがこれをインターフェースに依存をすることで依存性逆転の原則が適用できる
@@ -16,14 +17,17 @@ type ITaskUsecase interface {
 	DeleteTask(userId uint, taskId uint) error
 }
 
+// 依存関係はインターフェースにすることで実装クラスの変更をしても大丈夫になる
 type taskUsecase struct {
-	tr repository.ITaskRepository // 依存関係はインターフェースにしている
+	tr repository.ITaskRepository
+	tv validator.ITaskValidator // バリデーション
 }
 
-func NewTaskUsecase(tr repository.ITaskRepository) ITaskUsecase {
+// コンストラクタインジェクション
+func NewTaskUsecase(tr repository.ITaskRepository, tv validator.ITaskValidator) ITaskUsecase {
 	//　インターフェースを戻り値の方にしているが、実際には構造体の値を返している
-	// これができるのは構造体に紐づいている関数
-	return &taskUsecase{tr}
+	// レシーバー（構造体に紐づいている関数）の関数を使用することができるのでDI時に依存側は使用できる
+	return &taskUsecase{tr, tv}
 }
 
 func (tu *taskUsecase) GetAllTasks(userId uint) ([]model.TaskResponse, error) {
@@ -60,6 +64,11 @@ func (tu *taskUsecase) GetTaskById(userId uint, taskId uint) (model.TaskResponse
 }
 
 func (tu *taskUsecase) CreateTask(task model.Task) (model.TaskResponse, error) {
+
+	if err := tu.tv.TaskValidate(task); err != nil {
+		return model.TaskResponse{}, err
+	}
+
 	if err := tu.tr.CreateTask(&task); err != nil {
 		return model.TaskResponse{}, err // 空のインスタンス化したものを返却をする
 	}
@@ -73,6 +82,10 @@ func (tu *taskUsecase) CreateTask(task model.Task) (model.TaskResponse, error) {
 }
 
 func (tu *taskUsecase) UpdateTask(task model.Task, userId uint, taskId uint) (model.TaskResponse, error) {
+	if err := tu.tv.TaskValidate(task); err != nil {
+		return model.TaskResponse{}, err
+	}
+
 	if err := tu.tr.UpdateTask(&task, userId, taskId); err != nil {
 		return model.TaskResponse{}, nil // エラーの時はまずは空のインスタンスを生成する
 	}

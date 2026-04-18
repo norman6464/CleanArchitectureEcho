@@ -3,6 +3,7 @@ package usecase
 import (
 	"go-rest-api/model"
 	"go-rest-api/repository"
+	"go-rest-api/validator"
 	"os"
 	"time"
 
@@ -17,14 +18,21 @@ type IUserUsecase interface {
 
 type userUsecase struct {
 	ur repository.IUserRepository
+	uv validator.IUserValidator
 }
 
-// DI（Dpendency Injection）依存性注入をしている
-func NewuserUsecase(ur repository.IUserRepository) IUserUsecase {
-	return &userUsecase{ur}
+// コンストラクタインジェクション
+func NewuserUsecase(ur repository.IUserRepository, uv validator.IUserValidator) IUserUsecase {
+	return &userUsecase{ur, uv}
 }
 
+// サインアップメソッド
 func (uu *userUsecase) Signup(user model.User) (model.UserResponse, error) {
+
+	if err := uu.uv.UserValidate(user); err != nil {
+		return model.UserResponse{}, err
+	}
+
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
 	if err != nil {
 		return model.UserResponse{}, err // {}はインスタンス化であり、そこでまずは0値で返却をしている
@@ -42,7 +50,13 @@ func (uu *userUsecase) Signup(user model.User) (model.UserResponse, error) {
 	return resUser, nil
 }
 
+// ログインメソッド
 func (uu *userUsecase) Login(user model.User) (string, error) {
+
+	if err := uu.uv.UserValidate(user); err != nil {
+		return "", err
+	}
+
 	storedUser := model.User{}
 	if err := uu.ur.GetUserByEmail(&storedUser, user.Email); err != nil { // ここでポインタを渡しているので内部的にstoredUserインスタンスは値が入っている状態になっている
 		return "", err
